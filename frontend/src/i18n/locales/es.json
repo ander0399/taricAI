@@ -1,0 +1,73 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal. Intenta de nuevo.",
+    "back_to_login": "Volver al inicio de sesión",
+    "or": "o"
+  },
+  "register": {
+    "title": "Crea tu empresa en TaricAI",
+    "subtitle": "Comienza tu prueba gratuita hoy",
+    "company_name": "Nombre de la empresa",
+    "company_name_placeholder": "Ej. Comercial Andina S.A.",
+    "plan": "Plan",
+    "full_name": "Tu nombre completo",
+    "full_name_placeholder": "Ej. Ana García",
+    "email": "Correo electrónico",
+    "email_placeholder": "ana@empresa.com",
+    "password": "Contraseña",
+    "password_placeholder": "Mínimo 8 caracteres",
+    "submit": "Crear empresa y cuenta",
+    "already_have_account": "¿Ya tienes cuenta?",
+    "login_link": "Inicia sesión",
+    "success": "¡Empresa creada! Redirigiendo al dashboard..."
+  },
+  "login": {
+    "title": "Bienvenido de nuevo",
+    "subtitle": "Inicia sesión en tu cuenta",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "submit": "Iniciar sesión",
+    "no_account": "¿No tienes cuenta?",
+    "register_link": "Registra tu empresa"
+  },
+  "forgot": {
+    "title": "Recuperar contraseña",
+    "subtitle": "Ingresa tu email y te enviaremos un enlace",
+    "email": "Correo electrónico",
+    "submit": "Enviar enlace de recuperación",
+    "success": "Si ese email existe, recibirás un enlace en los próximos minutos."
+  },
+  "reset": {
+    "title": "Nueva contraseña",
+    "subtitle": "Elige una contraseña segura",
+    "new_password": "Nueva contraseña",
+    "new_password_placeholder": "Mínimo 8 caracteres",
+    "submit": "Cambiar contraseña",
+    "success": "Contraseña actualizada. Puedes iniciar sesión.",
+    "invalid_token": "Este enlace es inválido o ha expirado."
+  },
+  "invite": {
+    "title": "Únete a {{empresa}}",
+    "subtitle": "Has sido invitado como {{rol}}",
+    "full_name": "Tu nombre completo",
+    "password": "Elige una contraseña",
+    "submit": "Crear mi cuenta",
+    "success": "¡Cuenta creada! Bienvenido a TaricAI.",
+    "invalid": "Esta invitación es inválida o ha expirado."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Hola, {{nombre}}",
+    "plan": "Plan",
+    "usage": "Uso del mes",
+    "classifications_used": "{{usado}} / {{limite}} clasificaciones"
+  },
+  "plans": {
+    "free": "Free",
+    "starter": "Starter",
+    "pro": "Pro",
+    "business": "Business"
+  }
+}

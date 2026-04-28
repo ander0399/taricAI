@@ -1,0 +1,73 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong. Please try again.",
+    "back_to_login": "Back to login",
+    "or": "or"
+  },
+  "register": {
+    "title": "Create your company on TaricAI",
+    "subtitle": "Start your free trial today",
+    "company_name": "Company name",
+    "company_name_placeholder": "e.g. Andina Trading Co.",
+    "plan": "Plan",
+    "full_name": "Your full name",
+    "full_name_placeholder": "e.g. Ana García",
+    "email": "Email address",
+    "email_placeholder": "ana@company.com",
+    "password": "Password",
+    "password_placeholder": "At least 8 characters",
+    "submit": "Create company & account",
+    "already_have_account": "Already have an account?",
+    "login_link": "Sign in",
+    "success": "Company created! Redirecting to dashboard..."
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your account",
+    "email": "Email address",
+    "password": "Password",
+    "forgot_password": "Forgot your password?",
+    "submit": "Sign in",
+    "no_account": "Don't have an account?",
+    "register_link": "Register your company"
+  },
+  "forgot": {
+    "title": "Recover password",
+    "subtitle": "Enter your email and we'll send you a reset link",
+    "email": "Email address",
+    "submit": "Send recovery link",
+    "success": "If that email exists, you'll receive a link within minutes."
+  },
+  "reset": {
+    "title": "New password",
+    "subtitle": "Choose a secure password",
+    "new_password": "New password",
+    "new_password_placeholder": "At least 8 characters",
+    "submit": "Change password",
+    "success": "Password updated. You can now sign in.",
+    "invalid_token": "This link is invalid or has expired."
+  },
+  "invite": {
+    "title": "Join {{empresa}}",
+    "subtitle": "You've been invited as {{rol}}",
+    "full_name": "Your full name",
+    "password": "Choose a password",
+    "submit": "Create my account",
+    "success": "Account created! Welcome to TaricAI.",
+    "invalid": "This invitation is invalid or has expired."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Hello, {{nombre}}",
+    "plan": "Plan",
+    "usage": "Monthly usage",
+    "classifications_used": "{{usado}} / {{limite}} classifications"
+  },
+  "plans": {
+    "free": "Free",
+    "starter": "Starter",
+    "pro": "Pro",
+    "business": "Business"
+  }
+}
