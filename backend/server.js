@@ -66,7 +66,7 @@ const start = async () => {
       console.log(`✓ TaricAI Backend corriendo en http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('✗ Error al iniciar el servidor:', error.message);
+    console.error('✗ Error al iniciar el servidor:', error);
     process.exit(1);
   }
 };
