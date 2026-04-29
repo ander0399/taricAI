@@ -62,6 +62,11 @@ const start = async () => {
       console.log('✓ Modelos sincronizados con la base de datos.');
     }
 
+    if (process.env.SEED_ON_START === 'true') {
+      const { runSeed } = require('./usuariosPrueba/seeders/index');
+      await runSeed();
+    }
+
     app.listen(PORT, () => {
       console.log(`✓ TaricAI Backend corriendo en http://localhost:${PORT}`);
     });
