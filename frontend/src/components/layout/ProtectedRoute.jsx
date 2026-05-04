@@ -1,19 +1,29 @@
-import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { logout } from '../../store/slices/authSlice';
 
-/**
- * @description Guard de ruta. Verifica que exista un JWT válido antes de
- *              renderizar el componente hijo. Si no hay token, preserva la
- *              ruta actual en el query param ?redirect para retomar después
- *              del login. No redirige a / para no perder el contexto del usuario.
- * @returns {JSX.Element} <Outlet /> si autenticado | <Navigate> a /login?redirect=... si no
- */
+const TOKEN_KEY = 'taricai_token';
+
 const ProtectedRoute = () => {
   const token    = useSelector((s) => s.auth.token);
+  const dispatch = useDispatch();
   const location = useLocation();
 
+  // Bfcache fix: el navegador puede restaurar el estado JS anterior (incluyendo
+  // el token de Redux) al presionar Atrás después de cerrar sesión. Si el token
+  // ya no existe en localStorage, la sesión fue cerrada y hay que limpiar Redux.
+  useEffect(() => {
+    const handlePageShow = (e) => {
+      if (e.persisted && !localStorage.getItem(TOKEN_KEY)) {
+        dispatch(logout());
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [dispatch]);
+
   if (!token) {
-    // Preservar la ruta que el usuario intentaba visitar para retomar después del login
     const redirect = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }

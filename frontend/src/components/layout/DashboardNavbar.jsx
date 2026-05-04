@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Menu, X, LogOut, MessageSquare } from 'lucide-react';
+import { Globe, Menu, X, LogOut, MessageSquare, LayoutDashboard, Users } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
 
 const PLAN_LABEL = { free: 'Free', pro: 'Pro', team: 'Team', enterprise: 'Enterprise' };
@@ -16,9 +16,11 @@ const PLAN_BADGE = {
 };
 
 const NAV = [
+  { to: '/dashboard',               label: 'Dashboard',   icon: LayoutDashboard },
   { to: '/classifier',              label: 'Clasificador' },
   { to: '/classifier?view=history', label: 'Historial'   },
-  { to: '/dashboard/chat',          label: 'Chat de IA', icon: MessageSquare },
+  { to: '/dashboard/chat',          label: 'Chat de IA',  icon: MessageSquare   },
+  { to: '/team',                    label: 'Equipos',      icon: Users           },
   { to: '/dashboard/plan',          label: 'Mi Plan'      },
 ];
 
@@ -50,7 +52,7 @@ export default function DashboardNavbar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
 
         {/* Logo */}
-        <NavLink to="/classifier" className="flex items-center gap-2">
+        <NavLink to="/dashboard" className="flex items-center gap-2">
           <Globe className="w-6 h-6 text-blue-400" />
           <span className="text-xl font-bold text-white">Taric AI</span>
         </NavLink>

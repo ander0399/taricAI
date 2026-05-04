@@ -62,7 +62,11 @@ const start = async () => {
       console.log('✓ Modelos sincronizados con la base de datos.');
     }
 
-    if (process.env.SEED_ON_START === 'true') {
+    // Auto-seed: carga datos de prueba solo si no existen aún (idempotente por UUID fijo)
+    const { User } = require('./src/models');
+    const seedExists = await User.findByPk('a1000000-0000-0000-0000-000000000001');
+    if (!seedExists) {
+      console.log('✓ Datos de prueba no encontrados — ejecutando seed inicial...');
       const { runSeed } = require('./usuariosPrueba/seeders/index');
       await runSeed();
     }
