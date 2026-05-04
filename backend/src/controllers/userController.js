@@ -1,5 +1,49 @@
 const userService = require('../services/userService');
 
+const getMe = async (req, res) => {
+  try {
+    const perfil = await userService.obtenerPerfil(req.user.userId);
+    return res.status(200).json({ success: true, data: perfil });
+  } catch (error) {
+    console.error('[getMe]', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
+const updateMe = async (req, res) => {
+  try {
+    const { nombre } = req.body;
+    if (!nombre?.trim()) {
+      return res.status(400).json({ success: false, message: 'El nombre es requerido.' });
+    }
+    const user = await userService.actualizarNombre(req.user.userId, nombre.trim());
+    return res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    console.error('[updateMe]', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { passwordActual, passwordNuevo } = req.body;
+    if (!passwordActual || !passwordNuevo) {
+      return res.status(400).json({ success: false, message: 'passwordActual y passwordNuevo son requeridos.' });
+    }
+    if (passwordNuevo.length < 6) {
+      return res.status(400).json({ success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+    }
+    await userService.cambiarPassword(req.user.userId, passwordActual, passwordNuevo);
+    return res.status(200).json({ success: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    if (error.message === 'INVALID_CURRENT_PASSWORD') {
+      return res.status(401).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+    }
+    console.error('[changePassword]', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+  }
+};
+
 /**
  * @description Lista todos los usuarios activos de la empresa del solicitante.
  * @param {import('express').Request} req
@@ -112,4 +156,4 @@ const transferOwnership = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, updateRole, deactivateUser, transferOwnership };
+module.exports = { getUsers, updateRole, deactivateUser, transferOwnership, getMe, updateMe, changePassword };

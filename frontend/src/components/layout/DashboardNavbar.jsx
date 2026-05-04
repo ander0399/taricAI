@@ -1,13 +1,12 @@
-import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Menu, X, LogOut, MessageSquare, LayoutDashboard, Users } from 'lucide-react';
+import { Globe, Menu, X, LogOut, MessageSquare, LayoutDashboard, Users, User, ChevronDown } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
 
 const PLAN_LABEL = { free: 'Free', pro: 'Pro', team: 'Team', enterprise: 'Enterprise' };
 
-/** Clases de badge según plan — sistema de diseño oficial */
 const PLAN_BADGE = {
   free:       'bg-slate-700 text-slate-300 border border-slate-600',
   pro:        'bg-blue-600/20 text-blue-300 border border-blue-500/30',
@@ -20,29 +19,37 @@ const NAV = [
   { to: '/classifier',              label: 'Clasificador' },
   { to: '/classifier?view=history', label: 'Historial'   },
   { to: '/dashboard/chat',          label: 'Chat de IA',  icon: MessageSquare   },
-  { to: '/team',                    label: 'Equipos',      icon: Users           },
+  { to: '/team',                    label: 'Equipos',     icon: Users           },
   { to: '/dashboard/plan',          label: 'Mi Plan'      },
 ];
 
-/**
- * @description Navbar sticky de la app autenticada (módulo clasificador y vistas internas).
- * Paleta dark heredada del sistema de diseño de la Landing Page.
- * Responsive: menú hamburguesa en móvil con animación Framer Motion.
- */
 export default function DashboardNavbar() {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const dispatch   = useDispatch();
+  const navigate   = useNavigate();
+  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   const { user, company } = useSelector((s) => s.auth);
   const plan = company?.plan || 'free';
 
+  // Cierra el dropdown de perfil si se hace click fuera
+  useEffect(() => {
+    const handler = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleLogout = () => {
     dispatch(logout());
-    // Redirigir a / porque el usuario cerró sesión voluntariamente —
-    // la Landing Page es el punto de entrada natural, no el login.
     navigate('/', { replace: true });
   };
+
+  const initial = user?.nombre?.[0]?.toUpperCase() || '?';
 
   const linkClass = ({ isActive }) =>
     `text-sm transition font-medium ${isActive ? 'text-white' : 'text-slate-300 hover:text-white'}`;
@@ -59,9 +66,9 @@ export default function DashboardNavbar() {
 
         {/* Nav desktop */}
         <nav className="hidden md:flex items-center gap-6">
-          {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={linkClass}>
-              {item.label}
+          {NAV.map((navItem) => (
+            <NavLink key={navItem.to} to={navItem.to} className={linkClass}>
+              {navItem.label}
             </NavLink>
           ))}
         </nav>
@@ -71,14 +78,57 @@ export default function DashboardNavbar() {
           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${PLAN_BADGE[plan]}`}>
             {PLAN_LABEL[plan]}
           </span>
-          <span className="text-slate-300 text-sm">{user?.nombre}</span>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm transition-colors duration-200 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            Salir
-          </button>
+
+          {/* Avatar + dropdown */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen((v) => !v)}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {initial}
+              </div>
+              <span className="text-slate-300 text-sm max-w-[120px] truncate">{user?.nombre}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {profileOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-52 bg-slate-800 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                >
+                  {/* Info del usuario */}
+                  <div className="px-4 py-3 border-b border-white/10">
+                    <p className="text-white text-sm font-medium truncate">{user?.nombre}</p>
+                    <p className="text-slate-400 text-xs capitalize mt-0.5">{user?.role}</p>
+                  </div>
+
+                  <Link
+                    to="/dashboard/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Mi Perfil
+                  </Link>
+
+                  <div className="border-t border-white/10" />
+
+                  <button
+                    onClick={() => { setProfileOpen(false); handleLogout(); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:text-red-400 hover:bg-white/5 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Cerrar sesión
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Hamburguesa móvil */}
@@ -102,22 +152,37 @@ export default function DashboardNavbar() {
             className="overflow-hidden border-t border-white/10 bg-slate-900/95 md:hidden"
           >
             <nav className="flex flex-col px-4 py-3 gap-1">
-              {NAV.map((item) => (
+              {NAV.map((navItem) => (
                 <NavLink
-                  key={item.to}
-                  to={item.to}
+                  key={navItem.to}
+                  to={navItem.to}
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) =>
                     `px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`
                   }
                 >
-                  {item.label}
+                  {navItem.label}
                 </NavLink>
               ))}
+
+              <Link
+                to="/dashboard/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition"
+              >
+                <User className="w-4 h-4" />
+                Mi Perfil
+              </Link>
+
               <div className="border-t border-white/10 mt-2 pt-3 flex items-center justify-between">
-                <div>
-                  <p className="text-white text-sm font-medium">{user?.nombre}</p>
-                  <p className="text-slate-400 text-xs">Plan {PLAN_LABEL[plan]}</p>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                    {initial}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-medium">{user?.nombre}</p>
+                    <p className="text-slate-400 text-xs">Plan {PLAN_LABEL[plan]}</p>
+                  </div>
                 </div>
                 <button onClick={handleLogout} className="text-slate-400 hover:text-red-400 transition">
                   <LogOut className="w-5 h-5" />

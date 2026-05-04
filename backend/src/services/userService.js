@@ -94,4 +94,39 @@ const transferirPropiedad = async ({ nuevoOwnerId, currentOwnerId, companyId }) 
   }
 };
 
-module.exports = { listarUsuarios, cambiarRol, desactivarUsuario, transferirPropiedad };
+/**
+ * @description Retorna el perfil completo del usuario autenticado junto con su empresa.
+ */
+const obtenerPerfil = async (userId) => {
+  const user = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
+  if (!user) throw new Error('USER_NOT_FOUND');
+  const company = await Company.findByPk(user.companyId, { attributes: ['id', 'nombre', 'plan'] });
+  return { ...user.toJSON(), company: company?.toJSON() || null };
+};
+
+/**
+ * @description Actualiza el nombre del usuario autenticado.
+ */
+const actualizarNombre = async (userId, nombre) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('USER_NOT_FOUND');
+  await user.update({ nombre });
+  const { password, ...safe } = user.toJSON();
+  return safe;
+};
+
+/**
+ * @description Cambia la contraseña del usuario autenticado.
+ * Requiere la contraseña actual para confirmar identidad.
+ */
+const cambiarPassword = async (userId, passwordActual, passwordNuevo) => {
+  const bcrypt = require('bcrypt');
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('USER_NOT_FOUND');
+  const valido = await bcrypt.compare(passwordActual, user.password);
+  if (!valido) throw new Error('INVALID_CURRENT_PASSWORD');
+  const hashed = await bcrypt.hash(passwordNuevo, 10);
+  await user.update({ password: hashed });
+};
+
+module.exports = { listarUsuarios, cambiarRol, desactivarUsuario, transferirPropiedad, obtenerPerfil, actualizarNombre, cambiarPassword };
