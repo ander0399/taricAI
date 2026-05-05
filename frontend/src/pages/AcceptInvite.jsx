@@ -37,9 +37,9 @@ const AcceptInvite = () => {
       const res = await api.post('/invitations/accept', { token, ...form });
       const { token: jwt, user, company } = res.data.data;
       // Persistir sesión reutilizando la lógica del authSlice
-      localStorage.setItem('taricai_token', jwt);
-      localStorage.setItem('taricai_user', JSON.stringify(user));
-      localStorage.setItem('taricai_company', JSON.stringify(company));
+      sessionStorage.setItem('taricai_token', jwt);
+      sessionStorage.setItem('taricai_user', JSON.stringify(user));
+      sessionStorage.setItem('taricai_company', JSON.stringify(company));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || t('common.error'));

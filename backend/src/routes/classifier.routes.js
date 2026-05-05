@@ -31,7 +31,7 @@ router.post('/ocr', authenticate, planLimiter, requirePlan('pro', 'team', 'enter
 router.get('/history', authenticate, getHistoryHandler);
 router.get('/history/:id', authenticate, getHistoryDetailHandler);
 
-router.get('/export/:id', authenticate, requirePlan('pro', 'team', 'enterprise'), exportPDFHandler);
+router.get('/export/:id', authenticate, planLimiter, requirePlan('pro', 'team', 'enterprise'), exportPDFHandler);
 
 router.get('/countries', authenticate, getCountriesHandler);
 

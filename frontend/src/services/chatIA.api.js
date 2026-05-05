@@ -1,7 +1,7 @@
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function getToken() {
-  return localStorage.getItem('taricai_token');
+  return sessionStorage.getItem('taricai_token');
 }
 
 function authHeaders() {

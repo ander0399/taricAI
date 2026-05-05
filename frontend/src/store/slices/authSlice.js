@@ -4,9 +4,9 @@ import api from '../../services/api';
 const TOKEN_KEY = 'taricai_token';
 const USER_KEY  = 'taricai_user';
 
-// Carga la sesión guardada en LocalStorage al iniciar la app
-const savedUser  = JSON.parse(localStorage.getItem(USER_KEY)  || 'null');
-const savedToken = localStorage.getItem(TOKEN_KEY) || null;
+// Carga la sesión guardada en sessionStorage al iniciar la app (se limpia al cerrar la pestaña)
+const savedUser  = JSON.parse(sessionStorage.getItem(USER_KEY)  || 'null');
+const savedToken = sessionStorage.getItem(TOKEN_KEY) || null;
 
 export const registerOwner = createAsyncThunk('auth/registerOwner', async (data, { rejectWithValue }) => {
   try {
@@ -30,7 +30,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState: {
     user:    savedUser,
-    company: savedUser ? JSON.parse(localStorage.getItem('taricai_company') || 'null') : null,
+    company: savedUser ? JSON.parse(sessionStorage.getItem('taricai_company') || 'null') : null,
     token:   savedToken,
     loading: false,
     error:   null,
@@ -40,16 +40,16 @@ const authSlice = createSlice({
       state.user    = null;
       state.company = null;
       state.token   = null;
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem('taricai_company');
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem('taricai_company');
     },
     clearError(state) {
       state.error = null;
     },
     updateUser(state, action) {
       state.user = { ...state.user, ...action.payload };
-      localStorage.setItem(USER_KEY, JSON.stringify(state.user));
+      sessionStorage.setItem(USER_KEY, JSON.stringify(state.user));
     },
   },
   extraReducers: (builder) => {
@@ -60,9 +60,9 @@ const authSlice = createSlice({
       state.token   = action.payload.token;
       state.user    = action.payload.user;
       state.company = action.payload.company;
-      localStorage.setItem(TOKEN_KEY, action.payload.token);
-      localStorage.setItem(USER_KEY,  JSON.stringify(action.payload.user));
-      localStorage.setItem('taricai_company', JSON.stringify(action.payload.company));
+      sessionStorage.setItem(TOKEN_KEY, action.payload.token);
+      sessionStorage.setItem(USER_KEY,  JSON.stringify(action.payload.user));
+      sessionStorage.setItem('taricai_company', JSON.stringify(action.payload.company));
     };
 
     builder

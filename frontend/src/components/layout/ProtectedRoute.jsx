@@ -12,10 +12,10 @@ const ProtectedRoute = () => {
 
   // Bfcache fix: el navegador puede restaurar el estado JS anterior (incluyendo
   // el token de Redux) al presionar Atrás después de cerrar sesión. Si el token
-  // ya no existe en localStorage, la sesión fue cerrada y hay que limpiar Redux.
+  // ya no existe en sessionStorage, la sesión fue cerrada y hay que limpiar Redux.
   useEffect(() => {
     const handlePageShow = (e) => {
-      if (e.persisted && !localStorage.getItem(TOKEN_KEY)) {
+      if (e.persisted && !sessionStorage.getItem(TOKEN_KEY)) {
         dispatch(logout());
       }
     };

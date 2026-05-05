@@ -5,9 +5,9 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Adjunta el JWT de LocalStorage en cada request
+// Adjunta el JWT de sessionStorage en cada request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('taricai_token');
+  const token = sessionStorage.getItem('taricai_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -19,9 +19,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('taricai_token');
-      localStorage.removeItem('taricai_user');
-      localStorage.removeItem('taricai_company');
+      sessionStorage.removeItem('taricai_token');
+      sessionStorage.removeItem('taricai_user');
+      sessionStorage.removeItem('taricai_company');
       const redirect = encodeURIComponent(window.location.pathname + window.location.search);
       window.location.href = `/login?redirect=${redirect}`;
     }
