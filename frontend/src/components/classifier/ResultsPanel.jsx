@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RotateCcw, PlusCircle, ChevronDown, ChevronUp,
-  AlertTriangle, Shield, ExternalLink, CheckCircle2,
+  AlertTriangle, Shield, ExternalLink, CheckCircle2, Loader2, FileDown,
 } from 'lucide-react';
 import MirrorAnalysis from './MirrorAnalysis';
 import TariffCard from './TariffCard';
 import DocumentsChecklist from './DocumentsChecklist';
 import CostBreakdown from './CostBreakdown';
+import { downloadPDF } from '../../services/classifier.api';
 
 const CONFIDENCE_COLOR = (pct) => {
   if (pct >= 80) return 'bg-emerald-500';
@@ -31,6 +32,32 @@ const RISK_BADGE = {
  */
 export default function ResultsPanel({ result, exporterCountry, importerCountry, plan, onNewClassification, onReclassify }) {
   const [showSources, setShowSources] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfMsg, setPdfMsg] = useState(null);
+
+  const handleExportPDF = async () => {
+    if (!classificationId || pdfLoading) return;
+    setPdfLoading(true);
+    setPdfMsg(null);
+    try {
+      const response = await downloadPDF(classificationId);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `taricai-${hsCode || 'clasificacion'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setPdfMsg({ type: 'success', text: 'PDF descargado correctamente' });
+    } catch {
+      setPdfMsg({ type: 'error', text: 'No se pudo generar el PDF. Intenta de nuevo.' });
+    } finally {
+      setPdfLoading(false);
+      setTimeout(() => setPdfMsg(null), 4000);
+    }
+  };
 
   if (!result || result.step !== 'completed') return null;
 
@@ -256,12 +283,33 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
           </button>
           {isPro && (
             <button
-              onClick={() => alert('Export PDF — Fase 8')}
-              className="flex items-center gap-2 border border-white/30 text-white hover:bg-white/10 rounded-lg px-4 py-2 text-sm transition"
+              onClick={handleExportPDF}
+              disabled={pdfLoading || !classificationId}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 text-sm font-medium transition"
             >
-              📄 Exportar PDF
+              {pdfLoading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileDown className="w-4 h-4" />}
+              {pdfLoading ? 'Generando PDF...' : 'Exportar PDF'}
             </button>
           )}
+
+          <AnimatePresence>
+            {pdfMsg && (
+              <motion.span
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium ${
+                  pdfMsg.type === 'success'
+                    ? 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-600/20 border border-red-500/30 text-red-300'
+                }`}
+              >
+                {pdfMsg.type === 'success' ? '✓' : '✗'} {pdfMsg.text}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </motion.div>
 
       </div>

@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useClassification } from '../../hooks/useClassification';
 import InputSelector from './InputSelector';
 import TextClassifier from './TextClassifier';
@@ -193,6 +193,35 @@ export default function ClassifierLayout({ plan, showHistory, onToggleHistory })
           {renderStep()}
         </motion.div>
       </AnimatePresence>
+
+      {/* Overlay de procesamiento IA */}
+      {loading && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl px-10 py-8 flex flex-col items-center gap-5 shadow-2xl max-w-sm w-full mx-4">
+            <div className="relative">
+              <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-blue-500/20 animate-ping" />
+              </div>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-white font-semibold text-lg">
+                {step >= 5 ? 'Investigando aranceles' : 'Analizando producto'}
+              </p>
+              <p className="text-slate-400 text-sm">
+                {step >= 5
+                  ? 'Consultando fuentes arancelarias oficiales...'
+                  : 'Procesando descripción con IA...'}
+              </p>
+              {step >= 5 && (
+                <p className="text-slate-500 text-xs mt-2">
+                  Esto puede tomar unos segundos
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de upgrade cuando se supera el límite del plan */}
       <UpgradeModal

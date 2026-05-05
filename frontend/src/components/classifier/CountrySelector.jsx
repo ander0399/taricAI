@@ -116,13 +116,18 @@ export default function CountrySelector({ onSubmit, loading }) {
   const { countries, loading: countriesLoading } = useCountries();
   const [exporter, setExporter] = useState(null);
   const [importer, setImporter] = useState(null);
-  const canSubmit = exporter && importer && !loading;
+  const [clicked, setClicked]   = useState(false);
+
+  const isLoading = loading || clicked;
+  const canSubmit = exporter && importer && !isLoading;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    // Pasar ISO-3 al backend
+    setClicked(true);
     onSubmit(exporter.iso3, importer.iso3);
   };
+
+  useEffect(() => { if (!loading) setClicked(false); }, [loading]);
 
   if (countriesLoading) {
     return (
@@ -167,13 +172,15 @@ export default function CountrySelector({ onSubmit, loading }) {
         className={`w-full rounded-lg py-3 font-bold text-lg text-white transition ${
           canSubmit
             ? 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20'
-            : 'bg-slate-700 opacity-50 cursor-not-allowed'
+            : isLoading
+              ? 'bg-blue-700 cursor-not-allowed'
+              : 'bg-slate-700 opacity-50 cursor-not-allowed'
         }`}
       >
-        {loading ? (
+        {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="w-5 h-5 animate-spin" />
-            Consultando fuentes oficiales...
+            Investigando aranceles...
           </span>
         ) : (
           '🚀 Investigar aranceles'

@@ -11,33 +11,39 @@ const GUARD_MODEL = process.env.CHAT_GUARD_MODEL || 'gpt-4o-mini';
  * @returns {Promise<{ scope: 'IN_SCOPE'|'OUT_OF_SCOPE', queryType: string, countries: string[] }>}
  */
 async function validateAndClassify(message) {
-  const prompt = `Analiza el mensaje y responde SOLO con JSON válido sin markdown ni backticks:
-{
-  "scope": "IN_SCOPE" | "OUT_OF_SCOPE",
-  "queryType": "tariff"|"treaty"|"incoterms"|"logistics"|"geopolitical"|"market_research"|"customs_procedure"|"regulatory"|"sanctions"|"valuation"|"negotiation"|"contract"|"legal"|"transport_law"|"transfer_pricing"|"general"|"out_of_scope",
-  "countries": ["ISO3"]
-}
+  const systemPrompt = `Eres un clasificador JSON para un asistente de comercio exterior.
+Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto adicional.
 
-IN_SCOPE si el mensaje trata sobre: comercio exterior, aduanas, aranceles, incoterms, tratados, reglas de origen, valoración aduanera, logística internacional, documentación aduanera, barreras no arancelarias, negociación comercial, regulaciones importación/exportación, clasificación HS, regímenes aduaneros, zonas francas, drawback, controles exportación, sanciones internacionales, geopolítica y comercio, conflictos e impacto en cadenas de suministro, seguros de carga, derecho mercantil internacional, métodos de pago internacional, financiamiento comercio exterior, inteligencia comercial internacional, contratos internacionales, precios de transferencia.
+Campos requeridos:
+- scope: "IN_SCOPE" si el mensaje es sobre comercio exterior, aduanas, aranceles, tratados, incoterms, logística internacional, reglas de origen, valoración aduanera, documentación aduanera, barreras no arancelarias, negociación comercial, regulaciones de importación/exportación, clasificación HS, regímenes aduaneros, zonas francas, drawback, sanciones internacionales, geopolítica y comercio, cadenas de suministro, seguros de carga, derecho mercantil internacional, pagos internacionales, financiamiento de comercio exterior, inteligencia comercial, contratos internacionales, precios de transferencia. En caso de duda, usa "IN_SCOPE".
+- scope: "OUT_OF_SCOPE" solo si el mensaje claramente NO tiene ninguna relación con comercio internacional o actividades comerciales.
+- queryType: uno de: tariff, treaty, incoterms, logistics, geopolitical, market_research, customs_procedure, regulatory, sanctions, valuation, negotiation, contract, legal, transport_law, transfer_pricing, general, out_of_scope
+- countries: array con códigos ISO alpha-3 de países mencionados (máximo 5, vacío si ninguno)`;
 
-OUT_OF_SCOPE si NO está relacionado con ninguno de los anteriores.
-
-queryType: el tipo MÁS específico que aplica al mensaje. Si es out_of_scope usar "out_of_scope".
-countries: hasta 5 países ISO alpha-3 mencionados explícitamente (array vacío si ninguno).
-
-Mensaje: "${message.replace(/"/g, "'")}"`;
+  const userPrompt = `Clasifica este mensaje: "${message.replace(/"/g, "'")}"`;
 
   const response = await openai.chat.completions.create({
     model: GUARD_MODEL,
-    messages: [{ role: 'user', content: prompt }],
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
     temperature: 0,
-    max_tokens: 80,
+    max_tokens: 120,
+    response_format: { type: 'json_object' },
   });
 
   try {
-    return JSON.parse(response.choices[0].message.content.trim());
+    const parsed = JSON.parse(response.choices[0].message.content.trim());
+    if (!parsed.scope || !['IN_SCOPE', 'OUT_OF_SCOPE'].includes(parsed.scope)) {
+      parsed.scope = 'IN_SCOPE';
+    }
+    return {
+      scope: parsed.scope,
+      queryType: parsed.queryType || 'general',
+      countries: Array.isArray(parsed.countries) ? parsed.countries : [],
+    };
   } catch {
-    // Si el JSON falla, asumir IN_SCOPE con tipo general para no rechazar consultas válidas
     return { scope: 'IN_SCOPE', queryType: 'general', countries: [] };
   }
 }

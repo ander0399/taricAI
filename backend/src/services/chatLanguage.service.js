@@ -1,5 +1,3 @@
-const { franc } = require('franc');
-
 /**
  * @description Mapa completo ISO 639-3 → ISO 639-1 + nombre legible.
  * Cubre los 170+ idiomas que franc puede detectar.
@@ -94,19 +92,21 @@ const FALLBACK = { code: 'es', name: 'español' };
  * @param {string|null} conversationLanguage - ISO 639-1 del idioma previo de la conversación
  * @returns {{ code: string, name: string }} - ISO 639-1 code y nombre legible
  */
-function detectLanguage(message, conversationLanguage = null) {
-  // Mensajes muy cortos → franc no es confiable
+async function detectLanguage(message, conversationLanguage = null) {
   if (!message || message.trim().length < 8) {
     return resolveFromConversation(conversationLanguage);
   }
 
-  const iso3 = franc(message.trim(), { minLength: 8 });
-
-  if (iso3 === 'und' || !LANG_MAP[iso3]) {
+  try {
+    const { franc } = await import('franc');
+    const iso3 = franc(message.trim(), { minLength: 8 });
+    if (iso3 === 'und' || !LANG_MAP[iso3]) {
+      return resolveFromConversation(conversationLanguage);
+    }
+    return LANG_MAP[iso3];
+  } catch {
     return resolveFromConversation(conversationLanguage);
   }
-
-  return LANG_MAP[iso3];
 }
 
 function resolveFromConversation(conversationLanguage) {

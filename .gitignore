@@ -4,3 +4,4 @@ backend/.env.example
 frontend/node_modules
 frontend.env
 /promts
+notas.txt

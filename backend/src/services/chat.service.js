@@ -35,7 +35,7 @@ async function processChat(req, res) {
     }
   }
 
-  const lang = detectLanguage(message, conversation?.language || null);
+  const lang = await detectLanguage(message, conversation?.language || null);
 
   // ─── PASO 2+3: Scope + queryType + países (UNA llamada a gpt-4o-mini) ────
   const { scope, queryType, countries } = await validateAndClassify(message);
@@ -204,7 +204,7 @@ async function processChatSync(req) {
     if (!conversation) throw Object.assign(new Error('CONVERSATION_NOT_FOUND'), { status: 404 });
   }
 
-  const lang = detectLanguage(message, conversation?.language || null);
+  const lang = await detectLanguage(message, conversation?.language || null);
   const { scope, queryType, countries } = await validateAndClassify(message);
 
   if (!conversation) {
