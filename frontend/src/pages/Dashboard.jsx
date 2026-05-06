@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import DashboardNavbar from '../components/layout/DashboardNavbar';
+import RiskMapSection from '../components/riskMap/RiskMapSection';
 
 const PLAN_BADGE = {
   free:       'bg-slate-700 text-slate-300 border border-slate-600',
@@ -179,6 +180,11 @@ export default function Dashboard() {
               </Link>
             ))}
           </div>
+        </motion.div>
+
+        {/* ── Mapa de Riesgo País · TARIC 360° ── */}
+        <motion.div variants={item}>
+          <RiskMapSection />
         </motion.div>
 
         {/* ── Bottom: Activity + Plan ── */}

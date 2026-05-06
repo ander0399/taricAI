@@ -11,6 +11,7 @@ const enterpriseRoutes = require('./src/routes/enterpriseRoutes');
 const stripeRoutes        = require('./src/routes/stripe.routes');
 const subscriptionRoutes  = require('./src/routes/subscription.routes');
 const chatRoutes          = require('./src/routes/chat.routes');
+const riskMapRoutes       = require('./src/routes/riskMap.routes');
 const { handleWebhook } = require('./src/controllers/stripe.controller');
 const errorHandler = require('./src/utils/errorHandler');
 
@@ -41,6 +42,7 @@ app.use('/api/enterprise', enterpriseRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/risk-map', riskMapRoutes);
 
 // Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -63,12 +65,26 @@ const start = async () => {
     }
 
     // Auto-seed: carga datos de prueba solo si no existen aún (idempotente por UUID fijo)
-    const { User } = require('./src/models');
+    const { User, CountryRiskProfiles } = require('./src/models');
     const seedExists = await User.findByPk('a1000000-0000-0000-0000-000000000001');
     if (!seedExists) {
       console.log('✓ Datos de prueba no encontrados — ejecutando seed inicial...');
       const { runSeed } = require('./usuariosPrueba/seeders/index');
       await runSeed();
+    }
+
+    // Auto-seed: siembra perfiles de riesgo país si la tabla está vacía
+    const riskProfileCount = await CountryRiskProfiles.count();
+    if (riskProfileCount === 0) {
+      console.log('✓ CountryRiskProfiles vacío — sembrando perfiles iniciales...');
+      const { seedCountryRiskProfiles } = require('./src/seeds/seed.countryRiskProfiles');
+      await seedCountryRiskProfiles();
+    }
+
+    // Inicializar cron de Mapa de Riesgo País solo si está habilitado
+    if (process.env.RISK_MAP_CRON_ENABLED === 'true') {
+      const { initRiskMapCron } = require('./src/services/riskMapCron.service');
+      initRiskMapCron();
     }
 
     app.listen(PORT, () => {

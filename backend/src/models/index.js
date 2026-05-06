@@ -10,6 +10,9 @@ const Subscription = require('./Subscription');
 const EnterpriseLeads = require('./EnterpriseLeads');
 const ChatConversations = require('./ChatConversations');
 const ChatMessages = require('./ChatMessages');
+const CountryRiskProfiles = require('./CountryRiskProfiles');
+const RiskUpdateLogs = require('./RiskUpdateLogs');
+const UserMapInteractions = require('./UserMapInteractions');
 
 // Company -> Users (1:N)
 Company.hasMany(User, { foreignKey: 'companyId', as: 'usuarios' });
@@ -63,6 +66,14 @@ ChatMessages.belongsTo(User, { foreignKey: 'userId', as: 'usuario' });
 ChatConversations.hasMany(ChatMessages, { foreignKey: 'conversationId', as: 'mensajes', onDelete: 'CASCADE' });
 ChatMessages.belongsTo(ChatConversations, { foreignKey: 'conversationId', as: 'conversacion' });
 
+// Risk Map — UserMapInteractions tiene FK a User y Company para aislamiento multi-tenant
+User.hasMany(UserMapInteractions, { foreignKey: 'userId', as: 'mapInteracciones' });
+UserMapInteractions.belongsTo(User, { foreignKey: 'userId', as: 'usuario' });
+
+Company.hasMany(UserMapInteractions, { foreignKey: 'companyId', as: 'mapInteracciones' });
+UserMapInteractions.belongsTo(Company, { foreignKey: 'companyId', as: 'empresa' });
+
+// CountryRiskProfiles y RiskUpdateLogs no tienen FK formal — sin JOIN en logs/perfiles
 module.exports = {
   sequelize,
   Company,
@@ -76,4 +87,7 @@ module.exports = {
   EnterpriseLeads,
   ChatConversations,
   ChatMessages,
+  CountryRiskProfiles,
+  RiskUpdateLogs,
+  UserMapInteractions,
 };
