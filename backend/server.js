@@ -60,7 +60,26 @@ const start = async () => {
     console.log('✓ Conexión a PostgreSQL establecida.');
 
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
+      // sync({ alter: true }) falla en PostgreSQL cuando hay columnas ENUM existentes
+      // porque genera SQL con USING inline que Postgres no acepta.
+      // Solución: sync por modelo con fallback — alter para modelos sin ENUM, create-only para los que tienen.
+      const models = Object.values(sequelize.models);
+      for (const model of models) {
+        try {
+          await model.sync({ alter: true });
+        } catch (e) {
+          const isEnumSyntaxError =
+            e.original?.code === '42601' ||
+            e.parent?.code === '42601' ||
+            e.message?.includes('USING');
+          if (isEnumSyntaxError) {
+            await model.sync(); // crea la tabla si no existe, preserva estructura actual
+            console.warn(`  ⚠ ${model.name}: columnas ENUM — alter omitido. DROP TABLE para forzar recreación.`);
+          } else {
+            throw e;
+          }
+        }
+      }
       console.log('✓ Modelos sincronizados con la base de datos.');
     }
 
@@ -73,13 +92,12 @@ const start = async () => {
       await runSeed();
     }
 
-    // Auto-seed: siembra perfiles de riesgo país si la tabla está vacía
-    const riskProfileCount = await CountryRiskProfiles.count();
-    if (riskProfileCount === 0) {
-      console.log('✓ CountryRiskProfiles vacío — sembrando perfiles iniciales...');
-      const { seedCountryRiskProfiles } = require('./src/seeds/seed.countryRiskProfiles');
-      await seedCountryRiskProfiles();
-    }
+    // Auto-seed: siembra/actualiza perfiles de riesgo país en cada arranque.
+    // El seed es idempotente: destruye filas 'pending' y las re-inserta con TRS realistas,
+    // preservando filas 'completed' actualizadas por el cron.
+    const { seedCountryRiskProfiles } = require('./src/seeds/seed.countryRiskProfiles');
+    await seedCountryRiskProfiles();
+    console.log('✓ CountryRiskProfiles sembrado con TRS realistas.');
 
     // Inicializar cron de Mapa de Riesgo País solo si está habilitado
     if (process.env.RISK_MAP_CRON_ENABLED === 'true') {

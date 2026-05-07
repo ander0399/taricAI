@@ -232,6 +232,20 @@ export default function WorldMapSVG({ countries, filteredCountries, selectedIso,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topoData, getCountryColor]);
 
+  // ── Re-pintar colores cuando llegan datos del backend ─────────────────────
+  // El render D3 puede ocurrir antes que countries[] llegue (race condition CDN vs API).
+  // Este efecto corre DESPUÉS del efecto que actualiza profileMap.current.
+  useEffect(() => {
+    if (!gRef.current || !countries.length) return;
+    gRef.current.selectAll('path.country')
+      .attr('fill', (d) => getCountryColor(+d.id))
+      .attr('class', (d) => {
+        const alpha3 = NUM_TO_ALPHA3[+d.id];
+        const profile = alpha3 ? profileMap.current[alpha3] : null;
+        return profile?.riskLevel === 'critical' ? 'country critical-pulse' : 'country';
+      });
+  }, [countries, getCountryColor]);
+
   // ── Actualizar opacidad y stroke cuando cambian filtros o selección ────────
   useEffect(() => {
     if (!gRef.current) return;
