@@ -1,51 +1,52 @@
 const { callOpenAI } = require('./openai.service');
 
 /**
- * @description Orquesta el análisis arancelario espejo completo.
- *              Construye el prompt con datos de fuentes ya consultadas y llama
- *              a openai.service.js con gpt-4o. Solo para planes Pro, Team y Enterprise.
- *              El espejo detecta discrepancias entre la nomenclatura arancelaria nacional
- *              del país exportador y la del país importador, anticipando retenciones y multas.
- * @param {string} hsCode - Código HS internacional de 6 dígitos
- * @param {string} productDescription - Descripción confirmada del producto en lenguaje aduanero
- * @param {string} exporterCountry - ISO alpha-3 del país exportador (quien envía)
- * @param {string} importerCountry - ISO alpha-3 del país importador (quien recibe)
- * @param {string|null} hsCodeOrigin - Subpartida nacional del exportador (de tariffData consolidado)
- * @param {string|null} hsCodeDest - Subpartida nacional del importador (de tariffData consolidado)
- * @param {Object|null} tariffData - Datos consolidados de fuentes oficiales para contexto adicional
- * @param {string} language - Código ISO del idioma de respuesta (es/en/pt/fr...)
- * @returns {Promise<object>} Resultado completo del análisis espejo:
- *   concordance, exporterSubheading, importerSubheading, divergences,
- *   riskAssessment, rulesOfOrigin, recommendedSubheading, criticalAlerts
- * @throws {Error} Si OpenAI falla tras los 3 reintentos (se propaga al orquestador)
+ * @description Orquesta el análisis arancelario espejo completo v2.2.
+ *              Produce en una sola llamada a gpt-4o TANTO el resultJson v2.2
+ *              (con datos de exporter, importer, tradeAgreements, costBreakdown)
+ *              COMO el mirrorAnalysis v2.2 (con taxComparison, documentComparison,
+ *              ntbComparison, riskAssessment). Solo para planes Pro, Team y Enterprise.
+ *
+ * @param {string} hsCode              - Código HS internacional de 6 dígitos
+ * @param {string} productDescription  - Descripción confirmada del producto
+ * @param {string} exporterCountry     - ISO alpha-3 del país exportador
+ * @param {string} importerCountry     - ISO alpha-3 del país importador
+ * @param {number} confidence          - Confianza de la clasificación HS (0-100)
+ * @param {string} inputType           - 'text' | 'image' | 'ocr'
+ * @param {Object|null} consolidatedSources - Datos consolidados de fuentes oficiales
+ * @param {string} language            - Código ISO del idioma de respuesta
+ * @returns {Promise<{ resultJson: Object, mirrorAnalysis: Object }>} Estructuras v2.2 completas
+ * @throws {Error} Si OpenAI falla tras los 3 reintentos
  */
 async function performMirrorAnalysis(
   hsCode,
   productDescription,
   exporterCountry,
   importerCountry,
-  hsCodeOrigin,
-  hsCodeDest,
-  tariffData,
+  confidence,
+  inputType,
+  consolidatedSources,
   language,
 ) {
   const result = await callOpenAI(
     'mirror',
     {
-      hsCode,
       productDescription,
+      primaryHsCode:      hsCode,
+      confidence:         confidence || 0,
       exporterCountry,
       importerCountry,
-      // Si las fuentes no devolvieron subpartidas nacionales, indicarlo explícitamente
-      // para que gpt-4o las infiera desde su conocimiento del HS y las nomenclaturas locales
-      hsCodeOrigin: hsCodeOrigin || 'Por determinar — inferir desde HS internacional',
-      hsCodeDest: hsCodeDest || 'Por determinar — inferir desde HS internacional',
-      tariffData: tariffData || {},
+      inputType:          inputType || 'text',
+      officialSourcesData: consolidatedSources || {},
     },
     language,
   );
 
-  return result;
+  // La respuesta tiene estructura raíz { resultJson, mirrorAnalysis }
+  return {
+    resultJson:     result.resultJson     || null,
+    mirrorAnalysis: result.mirrorAnalysis || null,
+  };
 }
 
 module.exports = { performMirrorAnalysis };

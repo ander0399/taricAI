@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RotateCcw, PlusCircle, ChevronDown, ChevronUp,
-  AlertTriangle, Shield, ExternalLink, CheckCircle2, Loader2, FileDown,
+  AlertTriangle, Shield, ExternalLink, Loader2, FileDown,
 } from 'lucide-react';
 import MirrorAnalysis from './MirrorAnalysis';
 import TariffCard from './TariffCard';
 import DocumentsChecklist from './DocumentsChecklist';
 import CostBreakdown from './CostBreakdown';
 import { downloadPDF } from '../../services/classifier.api';
+import { detectVersion, getRiskLevel, getCriticalAlerts } from '../../utils/classification.compat';
 
 const CONFIDENCE_COLOR = (pct) => {
   if (pct >= 80) return 'bg-emerald-500';
@@ -23,8 +24,13 @@ const RISK_BADGE = {
   critical: 'bg-red-900/30 text-red-300',
 };
 
+const RISK_LABEL = {
+  low: 'Riesgo bajo', medium: 'Riesgo medio', high: 'Riesgo alto', critical: 'Riesgo crítico',
+};
+
 /**
  * @description Paso 6 del flujo clasificador — panel completo con todos los resultados.
+ * Soporta resultJson formato legacy y v2.2 mediante classification.compat.js.
  * Muestra: resumen ejecutivo, análisis espejo (Pro+), aranceles, documentos,
  * regulaciones, costos, alertas y fuentes consultadas.
  *
@@ -32,8 +38,48 @@ const RISK_BADGE = {
  */
 export default function ResultsPanel({ result, exporterCountry, importerCountry, plan, onNewClassification, onReclassify }) {
   const [showSources, setShowSources] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfMsg, setPdfMsg] = useState(null);
+  const [pdfLoading, setPdfLoading]   = useState(false);
+  const [pdfMsg, setPdfMsg]           = useState(null);
+
+  if (!result || result.step !== 'completed') return null;
+
+  const {
+    hsCode, hsDescription, confidence,
+    productDescription, alternativeCodes = [],
+    mirrorAnalysis, sourcesConsulted = 0,
+    classificationId,
+    resultJson,
+  } = result;
+
+  // Retrocompatibilidad: detectar versión y extraer campos
+  const version    = detectVersion(resultJson);
+  const isPro      = ['pro', 'team', 'enterprise'].includes(plan);
+  const riskLevel  = getRiskLevel(mirrorAnalysis, version);
+  const critAlerts = getCriticalAlerts(mirrorAnalysis, version);
+
+  // Subpartidas: preferir v2.2, fallback a legacy
+  const hsCodeOrigin = version === 'v2.2'
+    ? resultJson?.exporter?.nationalSubheading
+    : result.hsCodeOrigin;
+  const hsCodeDest = version === 'v2.2'
+    ? resultJson?.importer?.nationalSubheading
+    : result.hsCodeDest;
+
+  // Nombres de países para los componentes hijos
+  const exporterName = version === 'v2.2'
+    ? (resultJson?.exporter?.countryName || exporterCountry)
+    : exporterCountry;
+  const importerName = version === 'v2.2'
+    ? (resultJson?.importer?.countryName || importerCountry)
+    : importerCountry;
+
+  // Regulaciones especiales (solo legacy tariffData.specialRegulations)
+  const specialRegulations = version === 'v2.2'
+    ? []
+    : (result.tariffData?.specialRegulations || []);
+
+  // tariffData para componentes legacy (TariffCard usa esto)
+  const tariffData = version === 'v2.2' ? null : result.tariffData;
 
   const handleExportPDF = async () => {
     if (!classificationId || pdfLoading) return;
@@ -42,9 +88,9 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
     try {
       const response = await downloadPDF(classificationId);
       const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
       a.download = `taricai-${hsCode || 'clasificacion'}.pdf`;
       document.body.appendChild(a);
       a.click();
@@ -59,27 +105,14 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
     }
   };
 
-  if (!result || result.step !== 'completed') return null;
-
-  const {
-    hsCode, hsDescription, hsCodeOrigin, hsCodeDest,
-    confidence, productDescription, alternativeCodes = [],
-    tariffData, mirrorAnalysis, sourcesConsulted = 0,
-    classificationId,
-  } = result;
-
-  const isPro = ['pro', 'team', 'enterprise'].includes(plan);
-  const riskLevel = mirrorAnalysis?.riskAssessment?.level || null;
-  const specialRegulations = tariffData?.specialRegulations || [];
-
   const containerVariants = {
-    hidden: {},
+    hidden:  {},
     visible: { transition: { staggerChildren: 0.07 } },
   };
-  const itemVariants = {
+  const cardEnter = (delay = 0) => ({
     hidden:  { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0 },
-  };
+    visible: { opacity: 1, y: 0, transition: { delay } },
+  });
 
   return (
     <motion.div
@@ -91,21 +124,22 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* ── A. Resumen Ejecutivo ────────────────────────────────── */}
-        <motion.div variants={itemVariants} className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <motion.div variants={cardEnter(0)} className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
             <div>
-              <p className="text-slate-400 text-sm mb-1">{productDescription}</p>
+              <p className="text-slate-400 text-sm mb-1">{productDescription || resultJson?.product?.description}</p>
               <div className="flex flex-wrap items-center gap-3 mt-2">
                 <span className="font-mono bg-blue-600/20 text-blue-300 px-4 py-2 rounded-lg text-2xl font-bold tracking-widest">
-                  {hsCode || '------'}
+                  {hsCode || resultJson?.product?.hsCodeInternational || '------'}
                 </span>
-                <p className="text-slate-300 text-sm max-w-sm">{hsDescription}</p>
+                <p className="text-slate-300 text-sm max-w-sm">
+                  {hsDescription || resultJson?.product?.hsDescriptionInternational}
+                </p>
               </div>
             </div>
             {riskLevel && (
               <span className={`text-sm font-semibold px-3 py-1.5 rounded-full ${RISK_BADGE[riskLevel] || RISK_BADGE.low}`}>
-                {riskLevel === 'low' && '🟢'} {riskLevel === 'medium' && '🟡'} {riskLevel === 'high' && '🔴'} {riskLevel === 'critical' && '🔴🔴'}
-                {' '}Riesgo {riskLevel === 'low' ? 'bajo' : riskLevel === 'medium' ? 'medio' : riskLevel === 'critical' ? 'crítico' : 'alto'}
+                {RISK_LABEL[riskLevel] || riskLevel}
               </span>
             )}
           </div>
@@ -115,13 +149,13 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
             <div className="flex flex-wrap gap-4 mb-4">
               {hsCodeOrigin && (
                 <div className="bg-slate-900/60 rounded-lg px-4 py-2">
-                  <p className="text-xs text-slate-500 mb-0.5">Subpartida {exporterCountry}</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Subpartida {exporterName}</p>
                   <p className="font-mono text-blue-300 font-semibold">{hsCodeOrigin}</p>
                 </div>
               )}
               {hsCodeDest && (
                 <div className="bg-slate-900/60 rounded-lg px-4 py-2">
-                  <p className="text-xs text-slate-500 mb-0.5">Subpartida {importerCountry}</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Subpartida {importerName}</p>
                   <p className="font-mono text-blue-300 font-semibold">{hsCodeDest}</p>
                 </div>
               )}
@@ -162,34 +196,47 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
           )}
         </motion.div>
 
-        {/* ── B. Análisis Espejo (Pro+) ───────────────────────────── */}
+        {/* ── B. Análisis Espejo (Pro+) — v2.2 y legacy ──────────── */}
         {isPro && mirrorAnalysis && (
-          <motion.div variants={itemVariants}>
+          <motion.div variants={cardEnter(0.05)}>
             <MirrorAnalysis
               mirrorAnalysis={mirrorAnalysis}
+              resultJson={resultJson}
+              exporterCountry={exporterCountry}
+              importerCountry={importerCountry}
+              exporterCountryName={exporterName}
+              importerCountryName={importerName}
+              version={version}
+            />
+          </motion.div>
+        )}
+
+        {/* ── C + D. Acuerdos y Aranceles ────────────────────────── */}
+        {/* v2.2 Pro+: lo muestra MirrorAnalysis (secciones 3 y 4). Para Free o legacy: TariffCard */}
+        {!(version === 'v2.2' && isPro && mirrorAnalysis) && (tariffData || resultJson) && (
+          <motion.div variants={cardEnter(0.1)}>
+            <TariffCard
+              resultJson={resultJson}
+              tariffData={tariffData}
               exporterCountry={exporterCountry}
               importerCountry={importerCountry}
             />
           </motion.div>
         )}
 
-        {/* ── C + D. Acuerdos y Aranceles ────────────────────────── */}
-        <motion.div variants={itemVariants}>
-          <TariffCard
-            tariffData={tariffData}
-            exporterCountry={exporterCountry}
-            importerCountry={importerCountry}
+        {/* ── E. Documentos Requeridos ────────────────────────────── */}
+        <motion.div variants={cardEnter(0.15)}>
+          <DocumentsChecklist
+            resultJson={resultJson}
+            mirrorAnalysis={mirrorAnalysis}
+            exporterCountryName={exporterName}
+            importerCountryName={importerName}
           />
         </motion.div>
 
-        {/* ── E. Documentos Requeridos ────────────────────────────── */}
-        <motion.div variants={itemVariants}>
-          <DocumentsChecklist tariffData={tariffData} />
-        </motion.div>
-
-        {/* ── F. Regulaciones Especiales (Pro+) ──────────────────── */}
+        {/* ── F. Regulaciones Especiales (Pro+ legacy) ───────────── */}
         {isPro && specialRegulations.length > 0 && (
-          <motion.div variants={itemVariants} className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <motion.div variants={cardEnter(0.2)} className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-400" />
               Regulaciones Especiales
@@ -206,22 +253,22 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
         )}
 
         {/* ── G. Desglose de Costos ───────────────────────────────── */}
-        <motion.div variants={itemVariants}>
-          <CostBreakdown tariffData={tariffData} />
+        <motion.div variants={cardEnter(0.2)}>
+          <CostBreakdown resultJson={resultJson} />
         </motion.div>
 
-        {/* ── H. Alertas y Recomendaciones ───────────────────────── */}
-        {tariffData?.specialRegulations?.length > 0 || mirrorAnalysis?.criticalAlerts?.length > 0 ? (
+        {/* ── H. Alertas críticas ─────────────────────────────────── */}
+        {critAlerts.length > 0 && (
           <motion.div
-            variants={itemVariants}
+            variants={cardEnter(0.25)}
             className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-4 space-y-2"
           >
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="w-5 h-5 text-yellow-400" />
-              <h3 className="text-base font-semibold text-white">Alertas y Recomendaciones</h3>
+              <h3 className="text-base font-semibold text-white">Alertas Críticas</h3>
             </div>
             <ul className="space-y-1.5">
-              {(mirrorAnalysis?.criticalAlerts || []).map((alert, i) => (
+              {critAlerts.map((alert, i) => (
                 <li key={i} className="text-yellow-300 text-sm flex items-start gap-2">
                   <span className="mt-0.5">⚠️</span>
                   <span>{alert.description}</span>
@@ -229,18 +276,20 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
               ))}
             </ul>
           </motion.div>
-        ) : null}
+        )}
 
         {/* ── Fuentes consultadas (colapsable) ────────────────────── */}
-        <motion.div variants={itemVariants} className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+        <motion.div variants={cardEnter(0.3)} className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
           <button
-            onClick={() => setShowSources(v => !v)}
+            onClick={() => setShowSources((v) => !v)}
             className="w-full flex items-center justify-between px-5 py-3.5 text-sm text-slate-400 hover:text-white transition"
           >
             <div className="flex items-center gap-2">
               <ExternalLink className="w-4 h-4" />
               <span>Fuentes oficiales consultadas</span>
-              <span className="bg-slate-700 text-slate-400 text-xs px-2 py-0.5 rounded-full">{sourcesConsulted}</span>
+              <span className="bg-slate-700 text-slate-400 text-xs px-2 py-0.5 rounded-full">
+                {resultJson?.meta?.sourcesConsultedCount || sourcesConsulted}
+              </span>
             </div>
             {showSources ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -253,20 +302,24 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <p className="px-5 pb-4 text-slate-500 text-sm">
-                  Se consultaron {sourcesConsulted} fuentes oficiales en paralelo. Los detalles de cada fuente
-                  (URL, estado y timestamp) están disponibles en el historial de clasificaciones.
-                </p>
+                <div className="px-5 pb-4 space-y-1">
+                  <p className="text-slate-500 text-sm">
+                    Se consultaron {resultJson?.meta?.sourcesConsultedCount || sourcesConsulted} fuentes oficiales en paralelo.
+                    {resultJson?.meta?.sourcesWithDataCount !== undefined && (
+                      <span className="text-slate-600"> ({resultJson.meta.sourcesWithDataCount} con datos extraídos.)</span>
+                    )}
+                  </p>
+                  {resultJson?.meta?.warning && (
+                    <p className="text-yellow-400 text-xs">{resultJson.meta.warning}</p>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
 
         {/* ── Barra de acciones ───────────────────────────────────── */}
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-wrap gap-3 pt-2 pb-8"
-        >
+        <motion.div variants={cardEnter(0.35)} className="flex flex-wrap gap-3 pt-2 pb-8">
           <button
             onClick={onNewClassification}
             className="flex items-center gap-2 border border-white/30 text-white hover:bg-white/10 rounded-lg px-4 py-2 text-sm transition"
@@ -287,13 +340,10 @@ export default function ResultsPanel({ result, exporterCountry, importerCountry,
               disabled={pdfLoading || !classificationId}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 text-sm font-medium transition"
             >
-              {pdfLoading
-                ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <FileDown className="w-4 h-4" />}
+              {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               {pdfLoading ? 'Generando PDF...' : 'Exportar PDF'}
             </button>
           )}
-
           <AnimatePresence>
             {pdfMsg && (
               <motion.span
