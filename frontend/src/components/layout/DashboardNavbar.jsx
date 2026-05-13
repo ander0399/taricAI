@@ -18,6 +18,7 @@ const NAV = [
   { to: '/dashboard',               label: 'Dashboard',   icon: LayoutDashboard },
   { to: '/classifier',              label: 'Clasificador' },
   { to: '/classifier?view=history', label: 'Historial'   },
+  { to: '/dashboard/tracking',      label: 'Trazabilidad' },
   { to: '/dashboard/chat',          label: 'Chat de IA',  icon: MessageSquare   },
   { to: '/team',                    label: 'Equipos',     icon: Users           },
   { to: '/dashboard/plan',          label: 'Mi Plan'      },

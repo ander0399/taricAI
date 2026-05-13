@@ -3,6 +3,7 @@ import authReducer       from './slices/authSlice';
 import teamReducer       from './slices/teamSlice';
 import classifierReducer from './slices/classifierSlice';
 import chatIAReducer     from './slices/chatIASlice';
+import trackingReducer   from './slices/trackingSlice';
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     team:       teamReducer,
     classifier: classifierReducer,
     chatIA:     chatIAReducer,
+    tracking:   trackingReducer,
   },
 });
 

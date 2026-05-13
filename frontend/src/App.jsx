@@ -16,6 +16,7 @@ import ClassifierPage      from './pages/ClassifierPage';
 import PlanManagementPage from './pages/dashboard/PlanManagementPage';
 import ChatIAPage         from './pages/dashboard/ChatIAPage';
 import ProfilePage        from './pages/dashboard/ProfilePage';
+import TrackingPage       from './pages/dashboard/TrackingPage';
 
 const App = () => (
   <Provider store={store}>
@@ -35,9 +36,10 @@ const App = () => (
         {/* Rutas protegidas — redirigen a /login?redirect=<ruta> si no hay sesión */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard"      element={<Dashboard />} />
-          <Route path="/dashboard/plan"    element={<PlanManagementPage />} />
-          <Route path="/dashboard/chat"    element={<ChatIAPage />} />
-          <Route path="/dashboard/profile" element={<ProfilePage />} />
+          <Route path="/dashboard/plan"      element={<PlanManagementPage />} />
+          <Route path="/dashboard/chat"      element={<ChatIAPage />} />
+          <Route path="/dashboard/profile"   element={<ProfilePage />} />
+          <Route path="/dashboard/tracking"  element={<TrackingPage />} />
           <Route path="/team"           element={<TeamManagement />} />
           <Route path="/classifier"     element={<ClassifierPage />} />
         </Route>

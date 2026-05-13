@@ -1,4 +1,5 @@
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./src/models');
@@ -12,10 +13,12 @@ const stripeRoutes        = require('./src/routes/stripe.routes');
 const subscriptionRoutes  = require('./src/routes/subscription.routes');
 const chatRoutes          = require('./src/routes/chat.routes');
 const riskMapRoutes       = require('./src/routes/riskMap.routes');
+const trackingRoutes      = require('./src/routes/tracking.routes');
 const { handleWebhook } = require('./src/controllers/stripe.controller');
 const errorHandler = require('./src/utils/errorHandler');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
@@ -43,6 +46,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/risk-map', riskMapRoutes);
+app.use('/api/tracking', trackingRoutes);
 
 // Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -105,7 +109,24 @@ const start = async () => {
       initRiskMapCron();
     }
 
-    app.listen(PORT, () => {
+    // Auto-seed: envíos demo (idempotente)
+    try {
+      const { seedShipments } = require('./src/seeds/seed.shipments');
+      await seedShipments();
+    } catch (e) {
+      console.warn('[seed.shipments] Error en seed de envíos:', e.message);
+    }
+
+    // AISStream: iniciar servicio (modo demo si no hay API key)
+    require('./src/services/aisstream.service');
+
+    // WebSocket proxy — reenvía posiciones AIS en tiempo real al frontend
+    if (process.env.TRACKING_WS_ENABLED !== 'false') {
+      const { setupTrackingWS } = require('./src/services/tracking.ws');
+      setupTrackingWS(server);
+    }
+
+    server.listen(PORT, () => {
       console.log(`✓ TaricAI Backend corriendo en http://localhost:${PORT}`);
     });
   } catch (error) {

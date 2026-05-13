@@ -13,6 +13,8 @@ const ChatMessages = require('./ChatMessages');
 const CountryRiskProfiles = require('./CountryRiskProfiles');
 const RiskUpdateLogs = require('./RiskUpdateLogs');
 const UserMapInteractions = require('./UserMapInteractions');
+const Shipment = require('./Shipment');
+const ShipmentEvent = require('./ShipmentEvent');
 
 // Company -> Users (1:N)
 Company.hasMany(User, { foreignKey: 'companyId', as: 'usuarios' });
@@ -74,6 +76,17 @@ Company.hasMany(UserMapInteractions, { foreignKey: 'companyId', as: 'mapInteracc
 UserMapInteractions.belongsTo(Company, { foreignKey: 'companyId', as: 'empresa' });
 
 // CountryRiskProfiles y RiskUpdateLogs no tienen FK formal — sin JOIN en logs/perfiles
+
+// Tracking — Shipments (1:N) → ShipmentEvents
+Company.hasMany(Shipment, { foreignKey: 'companyId', as: 'envios' });
+Shipment.belongsTo(Company, { foreignKey: 'companyId', as: 'empresa' });
+
+User.hasMany(Shipment, { foreignKey: 'userId', as: 'envios' });
+Shipment.belongsTo(User, { foreignKey: 'userId', as: 'usuario' });
+
+Shipment.hasMany(ShipmentEvent, { foreignKey: 'shipmentId', as: 'eventos', onDelete: 'CASCADE' });
+ShipmentEvent.belongsTo(Shipment, { foreignKey: 'shipmentId', as: 'envio' });
+
 module.exports = {
   sequelize,
   Company,
@@ -90,4 +103,6 @@ module.exports = {
   CountryRiskProfiles,
   RiskUpdateLogs,
   UserMapInteractions,
+  Shipment,
+  ShipmentEvent,
 };

@@ -10,6 +10,7 @@ import {
 import api from '../services/api';
 import DashboardNavbar from '../components/layout/DashboardNavbar';
 import RiskMapSection from '../components/riskMap/RiskMapSection';
+import TrackingSection from '../components/tracking/TrackingSection';
 
 const PLAN_BADGE = {
   free:       'bg-slate-700 text-slate-300 border border-slate-600',
@@ -185,6 +186,14 @@ export default function Dashboard() {
         {/* ── Mapa de Riesgo País · TARIC 360° ── */}
         <motion.div variants={item}>
           <RiskMapSection />
+        </motion.div>
+
+        {/* ── Mapa de Trazabilidad de Carga ── */}
+        <motion.div variants={item}>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
+            Trazabilidad de Carga en Tiempo Real
+          </h2>
+          <TrackingSection />
         </motion.div>
 
         {/* ── Bottom: Activity + Plan ── */}
