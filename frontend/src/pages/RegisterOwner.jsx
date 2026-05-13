@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Globe, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { registerOwner, clearError } from '../store/slices/authSlice';
@@ -16,7 +15,6 @@ const PLAN_BANNER = {
 };
 
 const RegisterOwner = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 
 /**
@@ -7,7 +6,6 @@ import api from '../services/api';
  * Se auto-oculta si el uso está por debajo del umbral.
  */
 const UsageBanner = () => {
-  const { t } = useTranslation();
   const [usage, setUsage] = useState(null);
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTranslation } from 'react-i18next';
 import { logout } from '../store/slices/authSlice';
 import LanguageSwitcher from './LanguageSwitcher';
 import UsageBanner from './UsageBanner';
@@ -11,7 +10,6 @@ const NAV_ITEMS = [
 ];
 
 const AppLayout = ({ children }) => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, company } = useSelector((s) => s.auth);

@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Globe, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { login, clearError } from '../store/slices/authSlice';
 import { pageEnter } from '../styles/animations';
 
 const Login = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
